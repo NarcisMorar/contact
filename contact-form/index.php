@@ -1,134 +1,105 @@
 <?php
-require_once './vendor/autoload.php';
+	if (isset($_POST["submit"])) {
+		$name = $_POST['name'];
+		$email = $_POST['email'];
+		$message = $_POST['message'];
+		$human = intval($_POST['human']);
+		$from = 'Demo Contact Form';
+		$to = 'narcismorar@gmail.com'; 
+		$subject = 'Message from Contact Demo ';
 
-$helperLoader = new SplClassLoader('Helpers', './vendor');
-$mailLoader   = new SplClassLoader('SimpleMail', './vendor');
+		$body ="From: $name\n E-Mail: $email\n Message:\n $message";
 
-$helperLoader->register();
-$mailLoader->register();
+		// Check if name has been entered
+		if (!$_POST['name']) {
+			$errName = 'Please enter your name';
+		}
 
-use Helpers\Config;
-use SimpleMail\SimpleMail;
+		// Check if email has been entered and is valid
+		if (!$_POST['email'] || !filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)) {
+			$errEmail = 'Please enter a valid email address';
+		}
 
-$config = new Config;
-$config->load('./config/config.php');
+		//Check if message has been entered
+		if (!$_POST['message']) {
+			$errMessage = 'Please enter your message';
+		}
+		//Check if simple anti-bot test is correct
+		if ($human !== 5) {
+			$errHuman = 'Your anti-spam is incorrect';
+		}
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $name    = stripslashes(trim($_POST['form-name']));
-    $email   = stripslashes(trim($_POST['form-email']));
-    $phone   = stripslashes(trim($_POST['form-phone']));
-    $subject = stripslashes(trim($_POST['form-subject']));
-    $message = stripslashes(trim($_POST['form-message']));
-    $pattern = '/[\r\n]|Content-Type:|Bcc:|Cc:/i';
-
-    if (preg_match($pattern, $name) || preg_match($pattern, $email) || preg_match($pattern, $subject)) {
-        die("Header injection detected");
-    }
-
-    $emailIsValid = filter_var($email, FILTER_VALIDATE_EMAIL);
-
-    if ($name && $email && $emailIsValid && $subject && $message) {
-        $mail = new SimpleMail();
-
-        $mail->setTo($config->get('emails.to'));
-        $mail->setFrom($config->get('emails.from'));
-        $mail->setSender($name);
-        $mail->setSenderEmail($email);
-        $mail->setSubject($config->get('subject.prefix') . ' ' . $subject);
-
-        $body = "
-        <!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">
-        <html>
-            <head>
-                <meta charset=\"utf-8\">
-            </head>
-            <body>
-                <h1>{$subject}</h1>
-                <p><strong>{$config->get('fields.name')}:</strong> {$name}</p>
-                <p><strong>{$config->get('fields.email')}:</strong> {$email}</p>
-                <p><strong>{$config->get('fields.phone')}:</strong> {$phone}</p>
-                <p><strong>{$config->get('fields.message')}:</strong> {$message}</p>
-            </body>
-        </html>";
-
-        $mail->setHtml($body);
-        $mail->send();
-
-        $emailSent = true;
-    } else {
-        $hasError = true;
-    }
+// If there are no errors, send the email
+if (!$errName && !$errEmail && !$errMessage && !$errHuman) {
+	if (mail ($to, $subject, $body, $from)) {
+		$result='<div class="alert alert-success">Thank You! I will be in touch</div>';
+	} else {
+		$result='<div class="alert alert-danger">Sorry there was an error sending your message. Please try again later.</div>';
+	}
 }
-?><!DOCTYPE html>
-<html>
-<head>
-    <title>Simple PHP Contact Form</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
     <meta charset="utf-8">
-    <link href="//netdna.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet" media="screen">
-</head>
-<body>
-    <div class="jumbotron">
-        <div class="container">
-            <h1>Simple PHP Contact Form</h1>
-            <p>A Simple Contact Form developed in PHP with HTML5 Form validation. Has a fallback in <strike>jQuery</strike> pure JavaScript for browsers that do not support HTML5 form validation.</p>
-        </div>
-    </div>
-    <?php if(!empty($emailSent)): ?>
-        <div class="col-md-6 col-md-offset-3">
-            <div class="alert alert-success text-center"><?php echo $config->get('messages.success'); ?></div>
-        </div>
-    <?php else: ?>
-        <?php if(!empty($hasError)): ?>
-        <div class="col-md-5 col-md-offset-4">
-            <div class="alert alert-danger text-center"><?php echo $config->get('messages.error'); ?></div>
-        </div>
-        <?php endif; ?>
-
-    <div class="col-md-6 col-md-offset-3">
-        <form action="<?php echo $_SERVER['REQUEST_URI']; ?>" enctype="application/x-www-form-urlencoded" id="contact-form" class="form-horizontal" method="post">
-            <div class="form-group">
-                <label for="form-name" class="col-lg-2 control-label"><?php echo $config->get('fields.name'); ?></label>
-                <div class="col-lg-10">
-                    <input type="text" class="form-control" id="form-name" name="form-name" placeholder="<?php echo $config->get('fields.name'); ?>" required>
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="form-email" class="col-lg-2 control-label"><?php echo $config->get('fields.email'); ?></label>
-                <div class="col-lg-10">
-                    <input type="email" class="form-control" id="form-email" name="form-email" placeholder="<?php echo $config->get('fields.email'); ?>" required>
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="form-phone" class="col-lg-2 control-label"><?php echo $config->get('fields.phone'); ?></label>
-                <div class="col-lg-10">
-                    <input type="tel" class="form-control" id="form-phone" name="form-phone" placeholder="<?php echo $config->get('fields.phone'); ?>">
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="form-subject" class="col-lg-2 control-label"><?php echo $config->get('fields.subject'); ?></label>
-                <div class="col-lg-10">
-                    <input type="text" class="form-control" id="form-subject" name="form-subject" placeholder="<?php echo $config->get('fields.subject'); ?>" required>
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="form-message" class="col-lg-2 control-label"><?php echo $config->get('fields.message'); ?></label>
-                <div class="col-lg-10">
-                    <textarea class="form-control" rows="3" id="form-message" name="form-message" placeholder="<?php echo $config->get('fields.message'); ?>" required></textarea>
-                </div>
-            </div>
-            <div class="form-group">
-                <div class="col-lg-offset-2 col-lg-10">
-                    <button type="submit" class="btn btn-default"><?php echo $config->get('fields.btn-send'); ?></button>
-                </div>
-            </div>
-        </form>
-    </div>
-    <?php endif; ?>
-
-    <script type="text/javascript" src="public/js/contact-form.js"></script>
-    <script type="text/javascript">
-        new ContactForm('#contact-form');
-    </script>
-</body>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Bootstrap contact form with PHP example by BootstrapBay.com.">
+    <meta name="author" content="BootstrapBay.com">
+    <title>Bootstrap Contact Form With PHP Example</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
+  </head>
+  <body>
+  	<div class="container">
+  		<div class="row">
+  			<div class="col-md-6 col-md-offset-3">
+  				<h1 class="page-header text-center">Contact Form Example</h1>
+				<form class="form-horizontal" role="form" method="post" action="index.php">
+					<div class="form-group">
+						<label for="name" class="col-sm-2 control-label">Name</label>
+						<div class="col-sm-10">
+							<input type="text" class="form-control" id="name" name="name" placeholder="First & Last Name" value="<?php echo htmlspecialchars($_POST['name']); ?>">
+							<?php echo "<p class='text-danger'>$errName</p>";?>
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="email" class="col-sm-2 control-label">Email</label>
+						<div class="col-sm-10">
+							<input type="email" class="form-control" id="email" name="email" placeholder="example@domain.com" value="<?php echo htmlspecialchars($_POST['email']); ?>">
+							<?php echo "<p class='text-danger'>$errEmail</p>";?>
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="message" class="col-sm-2 control-label">Message</label>
+						<div class="col-sm-10">
+							<textarea class="form-control" rows="4" name="message"><?php echo htmlspecialchars($_POST['message']);?></textarea>
+							<?php echo "<p class='text-danger'>$errMessage</p>";?>
+						</div>
+					</div>
+					<div class="form-group">
+						<label for="human" class="col-sm-2 control-label">2 + 3 = ?</label>
+						<div class="col-sm-10">
+							<input type="text" class="form-control" id="human" name="human" placeholder="Your Answer">
+							<?php echo "<p class='text-danger'>$errHuman</p>";?>
+						</div>
+					</div>
+					<div class="form-group">
+						<div class="col-sm-10 col-sm-offset-2">
+							<input id="submit" name="submit" type="submit" value="Send" class="btn btn-primary">
+						</div>
+					</div>
+					<div class="form-group">
+						<div class="col-sm-10 col-sm-offset-2">
+							<?php echo $result; ?>
+						</div>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+  </body>
 </html>
