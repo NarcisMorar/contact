@@ -2,32 +2,21 @@
 
 
 $name = $_POST["name"];
-$email = $_POST["email"];
+$visitor_email = $_POST["email"];
 $message = $_POST["message"];
 
-$EmailTo = "narcismorar@gmail.com";
-$Subject = "New Message Received";
+$email_form = 'tutorial@gmail.com';
+$email_subject = "New Message Received";
+$email_body = "User Name: $name.\n".
+                  "User Name: $visitor_email.\n".
+                  "User Message: $message.\n";
 
-// prepare email body text
-$Body = "";
-$Body .= "Name: ";
-$Body .= $name;
-$Body .= "\n";
-$Body .= "Email: ";
-$Body .= $email;
-$Body .= "\n";
-$Body .= "Message: ";
-$Body .= $message;
-$Body .= "\n";
 
-// send email
-$success = mail($EmailTo, $Subject, $Body, "From:".$email);
 
-// redirect to success page
-if ($success){
-   echo "success";
-}else{
-    echo "invalid";
-}
+    $to = "narcismorar@gmail.com";
+    $headers = "From: $email_form \r\n";
+    $headers .= "Replay-To: $visitor \r\n";
+    mail($to, $email_subject, $email_body, $headers);
+    headers("Location: index.html");
 
 ?>
